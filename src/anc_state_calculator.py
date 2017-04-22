@@ -6,6 +6,8 @@ def sigsqML(tree): #tree must already have characters mapped to tips using match
     n = len(tree.lvsnms())
     vals = [None]*(n-2)
     p = 0
+    for i in tree.iternodes():
+        i.savelength = i.length
     for i in tree.iternodes(order="POSTORDER"):
         if i.istip == False and i != tree:
             x = [j.data['val'] for j in i.children]
@@ -20,6 +22,8 @@ def sigsqML(tree): #tree must already have characters mapped to tips using match
             t = [j.length for j in i.children]
             Vi = sum(t)
             V0 = (t[0]*t[1])/(t[0]+t[1])
+    for i in tree.iternodes():
+        i.length = i.savelength
     div = sum([math.pow(i[0],2)/i[1] for i in vals])+(0/V0)
     sig2 = (1./n) * div
     return sig2

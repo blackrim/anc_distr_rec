@@ -41,7 +41,7 @@ if __name__ == "__main__":
             if x < 0.2:
                 i.cont_values = bimodal(0,1,0.5,2,3,2.5,n_basesample)
             else:
-                i.cont_values = np.random.rayleigh(0.5,n_basesample)
+                i.cont_values = np.random.rayleigh(4.,n_basesample)
         density = kde(i.cont_values)
         x_grid = np.linspace(low, high, ncuts+1)
         kdepdf = density.evaluate(x_grid)
@@ -71,6 +71,7 @@ if __name__ == "__main__":
     cn = int(round((totaln)/3+1))
     f, axs = plt.subplots(3,cn, sharex=False, sharey=False)
     count = 0
+    ndcount = 0
     axc = 0
     for i in tree.iternodes(order="POSTORDER"):
         if count == cn:
@@ -78,7 +79,14 @@ if __name__ == "__main__":
             if axc == 3:
                 axc = 0
             count = 0
+        if len(i.children) > 0:
+            i.label = "nd"+str(ndcount)
+            ndcount += 1
+        plt.figure()
+        plt.plot(i.data['cont_values'])
+        plt.savefig(str(i.label)+'.png')
         axs[axc][count].plot(i.data['cont_values'])
         axs[axc][count].set_title(i.get_newick_repr(False))
         count += 1
-    plt.show()
+    #plt.show()
+    print tree.get_newick_repr(True)
