@@ -1,8 +1,7 @@
 import sys,os
-import tree_reader,node
+import tree_reader,node,sequence
 import math
 from utils import *
-import numpy as np
 from numpy import *
 from anc_state_calculator import *
 import aln_reader
@@ -21,20 +20,28 @@ for i in range(ncuts+1):
     cuts.append(low + (i*(float(high-low)/ncuts)))
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print "python "+sys.argv[0]+" tree phy"
+    if len(sys.argv) != 3 and len(sys.argv) != 2:
+        print "python "+sys.argv[0]+" tree [phylipfile]"
         sys.exit(0)
     infile = open(sys.argv[1],"r")
     tree = tree_reader.read_tree_string(infile.readline())
-    seqs = aln_reader.read_phylip_cont_file(sys.argv[2])
+    #if no seq file, it will simulate
+    seqs = None
+    if len(sys.argv) == 3:
+        seqs = aln_reader.read_phylip_cont_file(sys.argv[2])
+    else:
+        seqs = []
+        for i in tree.lvsnms():
+            seqs.append(sequence.Sequence(i,""))
     for i in seqs:
         #print i.cont_values
-        n_basesample = 1000
-        x = random.random()
-        if x < 0.2:
-            i.cont_values = bimodal(0,1,0.5,2,3,2.5,n_basesample)
-        else:
-            i.cont_values = np.random.rayleigh(0.5,n_basesample)
+        if len(sys.argv) != 3:
+            n_basesample = 1000
+            x = random.random()
+            if x < 0.2:
+                i.cont_values = bimodal(0,1,0.5,2,3,2.5,n_basesample)
+            else:
+                i.cont_values = np.random.rayleigh(0.5,n_basesample)
         density = kde(i.cont_values)
         x_grid = np.linspace(low, high, ncuts+1)
         kdepdf = density.evaluate(x_grid)
@@ -49,7 +56,6 @@ if __name__ == "__main__":
         i.cont_values = kdepdf
     infile.close()
     match_tips_and_cont_values(tree,seqs)
-    #calc the parsimony
     
     for i in tree.iternodes():
         if len(i.children) != 0:
