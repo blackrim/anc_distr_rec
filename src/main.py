@@ -90,10 +90,10 @@ if __name__ == "__main__":
         plt.fill_between(x_grid,0,i.data['cont_values'],alpha=0.25, color='blue')
         #plt.show()
         plt.savefig(str(i.label)+'.png')
+        plt.close()
         axs[axc][count].plot(i.data['cont_values'])
         axs[axc][count].set_title(i.get_newick_repr(False))
         count += 1
-    #plt.show()
     ts = tree.get_newick_repr(True)+";"
     print ts
 
