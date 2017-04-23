@@ -10,6 +10,7 @@ def match_tips_and_cont_values(tree,seqs):
         for j in seqs:
             if j.name == i.label:
                 i.data['cont_values'] = j.cont_values
+                i.data['orig_values'] = j.orig_values
                 test = True
                 break
         if test == False:
