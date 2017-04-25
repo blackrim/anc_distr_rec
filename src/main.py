@@ -1,14 +1,17 @@
 import sys,os
-import tree_reader,node,sequence
 import math
-from utils import *
 from numpy import *
-from anc_state_calculator import *
-import aln_reader
 import math
 from scipy.stats import gaussian_kde as kde
 from scipy import stats
 import matplotlib.pyplot as plt
+plt.style.use('fivethirtyeight')
+
+import tree_reader,node,sequence
+from utils import *
+from anc_state_calculator import *
+import aln_reader
+import conf
 
 #this is the number of cuts
 ncuts = 50
@@ -30,6 +33,8 @@ if __name__ == "__main__":
     seqs = None
     if len(sys.argv) == 3:
         seqs = aln_reader.read_phylip_cont_file(sys.argv[2])
+        if conf.precut: 
+            ncuts = len(seqs[0].sequence)
     else:
         seqs = []
         for i in tree.lvsnms():
@@ -47,11 +52,14 @@ if __name__ == "__main__":
             else:
                 i.cont_values = np.random.rayleigh(1.,n_basesample)
                 #i.cont_values = bimodal(1,2,1.5,3,4,3.5,n_basesample)
+        plt.show()
         density = kde(i.cont_values)
         density.covariance_factor = lambda : .25
         density._compute_covariance()
         kdepdf = density.evaluate(x_grid)
         i.orig_values = i.cont_values
+        if conf.sumtoone:
+            i.cont_values,scale = scale_to_one(i.cont_values)
         i.cont_values = kdepdf
     infile.close()
     match_tips_and_cont_values(tree,seqs)
@@ -59,54 +67,52 @@ if __name__ == "__main__":
     for i in tree.iternodes():
         if len(i.children) != 0:
             i.data['cont_values'] = []
+            i.data['cont_values_se'] = []
 
     ## Conduct the analyses
-    outfile = open("contanc.tre","w")
     for i in range(ncuts+1):
         curcost = calc_square_change_anc_states(tree,0.00001,i)
-        outfile.write(tree.get_newick_repr(True)+"\n")
-    outfile.close()
+
+    ## standard error and scale to one
+    for i in tree.iternodes():
+        if i.istip == False:
+            i.data['cont_values_low'] = [max(j-k,0) for j,k in zip(i.data['cont_values'],i.data['cont_values_se'])]
+            i.data['cont_values_high'] = [max(j+k,0) for j,k in zip(i.data['cont_values'],i.data['cont_values_se'])]
+            if conf.sumtoone:
+                i.data['cont_values'],scale = scale_to_one(i.data['cont_values'])
+                #i.data['cont_values_se'] = [j*scale for j in i.data['cont_values_se']]
+                i.data['cont_values_low'],scale = scale_to_one(i.data['cont_values_low'])
+                i.data['cont_values_high'],scale = scale_to_one(i.data['cont_values_high'])
 
     ## Construct the png plot figures of the tips and internal nodes
-    totaln = len(list(tree.iternodes()))
-    cn = int(round((totaln)/3+1))
-    f, axs = plt.subplots(3,cn, sharex=False, sharey=False)
-    count = 0
     ndcount = 0
-    axc = 0
     for i in tree.iternodes(order="POSTORDER"):
-        if count == cn:
-            axc += 1
-            if axc == 3:
-                axc = 0
-            count = 0
         plt.figure()
+        plt.plot(x_grid,i.data['cont_values'])
+        #should output the i.data['cont_values'] for each node here
         if len(i.children) > 0:
             i.label = "nd"+str(ndcount)
             ndcount += 1
         else:
-            plt.hist(i.data['orig_values'],normed=1,facecolor='g', alpha=0.25,lw=0)
-        plt.plot(x_grid,i.data['cont_values'],lw=3,color='blue',alpha=0.5)
-        plt.fill_between(x_grid,0,i.data['cont_values'],alpha=0.25, color='blue')
-        #plt.show()
+            plt.hist(i.data['orig_values'],normed=1, histtype='stepfilled',alpha=0.25)
+        plt.fill_between(x_grid,0,i.data['cont_values'],alpha=0.05)
+        if i.istip == False:
+            plt.plot(x_grid,i.data['cont_values_low'],'--',alpha=0.55,)
+            plt.plot(x_grid,i.data['cont_values_high'],'--',alpha=0.55,)
+        plt.grid(True)
         plt.savefig(str(i.label)+'.png')
         plt.close()
-        axs[axc][count].plot(i.data['cont_values'])
-        axs[axc][count].set_title(i.get_newick_repr(False))
-        count += 1
     ts = tree.get_newick_repr(True)+";"
-    print ts
 
     ## Plotting the tree and distribution using ETE
-    pl = raw_input("Do you want to plot the tree and results (using ete)? [y/n, default = y]")
-    if pl.lower() == 'y' or len(pl) == 0:
+    if conf.showtree:
         from ete3 import Tree, TreeStyle, TextFace,faces
         from plot_results import mylayout
         t = Tree(ts,format=1)
         # Basic tree style
         ts = TreeStyle()
         ts.show_branch_length=True
-        ts.show_leaf_name = True
+        ts.show_leaf_name = False
         ts.layout_fn = mylayout
         # Add two text faces to different columns
         t.show(tree_style=ts)

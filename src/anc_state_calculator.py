@@ -85,7 +85,6 @@ def calc_square_change_anc_states(tree,rate,char, estimaterate = True):
                 sos += temp*temp / j.length
     #print "Square Length: ",sos
     #calcSE
-    #we don't use this right now
     for i in tree.iternodes(order="postorder"):
         if i.istip == False:
             qpq = fullMcp[nodenum[i]][nodenum[i]]
@@ -95,6 +94,6 @@ def calc_square_change_anc_states(tree,rate,char, estimaterate = True):
             sol = cho_solve(b,tm1[:,nodenum[i]])
             tempse = qpq - np.inner(tm1[:,nodenum[i]],sol)
             i.data['valse'] = math.sqrt(2*sos/(df*tempse))
-    return 0
+            i.data['cont_values_se'].append(i.data['valse'])
 
 

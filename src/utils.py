@@ -17,7 +17,6 @@ def match_tips_and_cont_values(tree,seqs):
             print "can't find "+i.label+" in cont_values"
             return False
 
-
 def bimodal( low1, high1, mode1, low2, high2, mode2 ,N):
     ns = []
     for i in range(N):
@@ -27,6 +26,13 @@ def bimodal( low1, high1, mode1, low2, high2, mode2 ,N):
         else:
             ns.append( np.random.triangular( low2, mode2, high2 ))
     return ns
+
+def scale_to_one(li):
+    sc = float(1)/sum(li)
+    nl = []
+    for i in li:
+        nl.append(i*sc)
+    return nl,sc
 
 def aic(k,l):
     return (2*k)+(2*l)
