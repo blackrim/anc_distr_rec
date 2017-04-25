@@ -1,12 +1,18 @@
 import sys
 import os
 from ete3 import Tree, TreeStyle, TextFace,faces, AttrFace
+import conf
 
 def mylayout(node):
-    nf = faces.ImgFace(node.name+".png")
-    faces.add_face_to_node(nf,node,0)
+    nf = faces.ImgFace(conf.outdir+node.name+".png")
+    nf.margin_bottom = 20
+    nf.margin_right = 20
+    nf.margin_left = 20
+    faces.add_face_to_node(nf,node,0,position = "branch-top")
     if node.is_leaf():
-        faces.add_face_to_node(AttrFace("name",fsize=30), node, column=1)
+        ff = AttrFace("name",fsize=30)
+        ff.margin_left = 20
+        faces.add_face_to_node(ff, node, column=1)
 
 
 if __name__ == "__main__":

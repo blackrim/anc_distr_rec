@@ -6,7 +6,7 @@ as variables and lists.
 
 # Do you want to normalize the inference and data to 
 #  sum to 1?
-sumtoone = False
+sumtoone = True#False
 
 # Is the data already in distinct categories?
 precut = False
@@ -14,3 +14,5 @@ precut = False
 # Do you have ETE installed and you want to see the result
 #  afterwards?
 showtree = True
+
+outdir = "distfigs/"

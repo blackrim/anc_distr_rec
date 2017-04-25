@@ -29,6 +29,9 @@ if __name__ == "__main__":
     infile = open(sys.argv[1],"r")
     tree = tree_reader.read_tree_string(infile.readline())
     
+    if os.path.isdir(conf.outdir) == False:
+        os.makedirs(conf.outdir)
+
     ## If no seq file, it will simulate
     seqs = None
     if len(sys.argv) == 3:
@@ -43,16 +46,13 @@ if __name__ == "__main__":
     ## Calculate the kernel densities
     x_grid = np.linspace(low, high, ncuts+1)
     for i in seqs:
-        #print i.cont_values
         if len(sys.argv) != 3:
-            n_basesample = 1000
+            n_basesample = 2000
             x = random.random()
             if x < 0.2:
-                i.cont_values = bimodal(0,1,0.5,2,3,2.5,n_basesample)
+                i.cont_values = bimodal(0,2,1,4,6,5,n_basesample)
             else:
                 i.cont_values = np.random.rayleigh(1.,n_basesample)
-                #i.cont_values = bimodal(1,2,1.5,3,4,3.5,n_basesample)
-        plt.show()
         density = kde(i.cont_values)
         density.covariance_factor = lambda : .25
         density._compute_covariance()
@@ -76,18 +76,16 @@ if __name__ == "__main__":
     ## standard error and scale to one
     for i in tree.iternodes():
         if i.istip == False:
-            i.data['cont_values_low'] = [max(j-k,0) for j,k in zip(i.data['cont_values'],i.data['cont_values_se'])]
-            i.data['cont_values_high'] = [max(j+k,0) for j,k in zip(i.data['cont_values'],i.data['cont_values_se'])]
             if conf.sumtoone:
                 i.data['cont_values'],scale = scale_to_one(i.data['cont_values'])
-                #i.data['cont_values_se'] = [j*scale for j in i.data['cont_values_se']]
-                i.data['cont_values_low'],scale = scale_to_one(i.data['cont_values_low'])
-                i.data['cont_values_high'],scale = scale_to_one(i.data['cont_values_high'])
+                i.data['cont_values_se'] = [j*scale for j in i.data['cont_values_se']]
+            i.data['cont_values_low'] = [max(j-k,0) for j,k in zip(i.data['cont_values'],i.data['cont_values_se'])]
+            i.data['cont_values_high'] = [max(j+k,0) for j,k in zip(i.data['cont_values'],i.data['cont_values_se'])]
 
     ## Construct the png plot figures of the tips and internal nodes
     ndcount = 0
     for i in tree.iternodes(order="POSTORDER"):
-        plt.figure()
+        plt.figure(figsize=(6, 4))
         plt.plot(x_grid,i.data['cont_values'])
         #should output the i.data['cont_values'] for each node here
         if len(i.children) > 0:
@@ -97,10 +95,10 @@ if __name__ == "__main__":
             plt.hist(i.data['orig_values'],normed=1, histtype='stepfilled',alpha=0.25)
         plt.fill_between(x_grid,0,i.data['cont_values'],alpha=0.05)
         if i.istip == False:
-            plt.plot(x_grid,i.data['cont_values_low'],'--',alpha=0.55,)
             plt.plot(x_grid,i.data['cont_values_high'],'--',alpha=0.55,)
+            plt.plot(x_grid,i.data['cont_values_low'],'--',alpha=0.55,)
         plt.grid(True)
-        plt.savefig(str(i.label)+'.png')
+        plt.savefig(conf.outdir+str(i.label)+'.png')
         plt.close()
     ts = tree.get_newick_repr(True)+";"
 
@@ -111,8 +109,11 @@ if __name__ == "__main__":
         t = Tree(ts,format=1)
         # Basic tree style
         ts = TreeStyle()
-        ts.show_branch_length=True
+        ts.show_branch_length=False
         ts.show_leaf_name = False
+        ts.scale =  900
+        ts.branch_vertical_margin = 1
         ts.layout_fn = mylayout
         # Add two text faces to different columns
-        t.show(tree_style=ts)
+        #t.show(tree_style=ts)
+        t.render("contree.pdf", w=6000, units="mm", tree_style=ts)
