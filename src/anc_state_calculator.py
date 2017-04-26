@@ -95,5 +95,5 @@ def calc_square_change_anc_states(tree,rate,char, estimaterate = True):
             tempse = qpq - np.inner(tm1[:,nodenum[i]],sol)
             i.data['valse'] = math.sqrt(2*sos/(df*tempse))
             i.data['cont_values_se'].append(i.data['valse'])
-
+    return rate
 

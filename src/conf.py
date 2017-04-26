@@ -6,7 +6,7 @@ as variables and lists.
 
 # Do you want to normalize the inference and data to 
 #  sum to 1?
-sumtoone = True#False
+sumtoone = True
 
 # Is the data already in distinct categories?
 precut = False
