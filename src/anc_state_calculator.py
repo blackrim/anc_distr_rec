@@ -1,41 +1,44 @@
 import numpy as np
+import tree_utils
 from numpy import *
 from scipy.linalg import *
 
-def sigsqML(tree): #tree must already have characters mapped to tips using match_traits_tips()
-    n = len(tree.lvsnms())
-    vals = [None]*(n-2)
-    p = 0
-    for i in tree.iternodes():
-        i.savelength = i.length
-    for i in tree.iternodes(order="POSTORDER"):
-        if i.istip == False and i != tree:
-            x = [j.data['val'] for j in i.children]
-            t = [j.length for j in i.children]
-            ui = abs(x[0]-x[1])
-            Vi = sum(t)
-            vals[p] = (ui,Vi)
-            add = (t[0]*t[1])/(t[0]+t[1])
-            i.length = i.length + add
-            p += 1
-        if i == tree:
-            t = [j.length for j in i.children]
-            Vi = sum(t)
-            V0 = (t[0]*t[1])/(t[0]+t[1])
-    for i in tree.iternodes():
-        i.length = i.savelength
-    div = sum([math.pow(i[0],2)/i[1] for i in vals])+(0/V0)
-    sig2 = (1./n) * div
-    return sig2
+def var_cov_matrix(tree):
+    lvs = tree.leaves()
+    ll = len(lvs)
+    zm = zeros((ll,ll))
+    for i in range(ll):
+        for j in range(ll):
+            curnode = None
+            if i == j:
+                curnode = lvs[i]
+            elif j > i:
+                curnode = tree_utils.get_mrca([lvs[i],lvs[j]],tree)
+            else:
+                continue
+            count = 0
+            while curnode != tree:
+                count += curnode.length
+                curnode = curnode.parent
+            zm[i][j] = count
+            zm[j][i] = count
+    return zm
 
-"""
-calculates square change parsimony for continuous characters
-same as likelihood with brownian
+def sigsqML(tree):
+    lvs = tree.leaves()
+    ahat = tree.data['val']
+    N = len(lvs)
+    EX = np.zeros((N,1))
+    for i in range(N):
+        EX[i][0] = float(tree.data['val'])
+    X = np.zeros((N,1))
+    for i in range(N):
+        X[i][0] = float(lvs[i].data['val'])
+    ones = np.ones((N,1))
+    vcv = var_cov_matrix(tree)
+    return (((X-EX).T.dot(inv(vcv)).dot(X-EX))/(N))[0]
 
-NOTE: right now, this isn't using valse (standard error) because we 
-are doing distributions
-"""
-def calc_square_change_anc_states(tree,rate,char, estimaterate = True):
+def calc_schluter_anc_states(tree,char):
     df = 0
     nodenum = {}
     count = 0
@@ -50,8 +53,6 @@ def calc_square_change_anc_states(tree,rate,char, estimaterate = True):
             i.data['val'] = 0.
             i.data['valse'] = 0
     df -= 1
-    if estimaterate:
-        rate = sigsqML(tree)
     #compute the mlest of the root
     fullMcp = zeros((df+1,df+1))
     fullVcp = zeros(df+1)
@@ -80,11 +81,12 @@ def calc_square_change_anc_states(tree,rate,char, estimaterate = True):
             i.data['cont_values'].append(mle[nodenum[i]])
             #print i.data['val']
             #i.label = str(mle[nodenum[i]])
+            #print i.get_newick_repr(False),mle[nodenum[i]]
             for j in i.children:
                 temp = (i.data['val'] - j.data['val'])
                 sos += temp*temp / j.length
-    #print "Square Length: ",sos
     #calcSE
+    # need to change this to the rohlf 2001 standard errors
     for i in tree.iternodes(order="postorder"):
         if i.istip == False:
             qpq = fullMcp[nodenum[i]][nodenum[i]]
@@ -95,5 +97,5 @@ def calc_square_change_anc_states(tree,rate,char, estimaterate = True):
             tempse = qpq - np.inner(tm1[:,nodenum[i]],sol)
             i.data['valse'] = math.sqrt(2*sos/(df*tempse))
             i.data['cont_values_se'].append(i.data['valse'])
-    return rate
+            #print i.data['valse']
 

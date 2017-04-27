@@ -6,10 +6,10 @@ as variables and lists.
 
 # Do you want to normalize the inference and data to 
 #  sum to 1?
-sumtoone = True
+sumtoone = False#True
 
 # Is the data already in distinct categories?
-precut = False
+precut = True#False
 
 # Do you have ETE installed and you want to see the result
 #  afterwards?

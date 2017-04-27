@@ -84,8 +84,8 @@ if __name__ == "__main__":
     ## Conduct the analyses
     rates = []
     for i in range(ncuts):
-        estrate = calc_square_change_anc_states(tree,0.00001,i)
-        print estrate
+        calc_schluter_anc_states(tree,i)
+        estrate = sigsqML(tree)
         rates.append(estrate)
 
     #plot the estimated rates
