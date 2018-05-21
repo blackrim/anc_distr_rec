@@ -162,8 +162,18 @@ def main():
 
     ## Plotting the tree and distribution using ETE
     if args.showtree and args.printplots:
-        from ete3 import Tree, TreeStyle, TextFace,faces
-        from plot_results import mylayout
+        from ete3 import Tree, TreeStyle, TextFace,faces,AttrFace
+        #from plot_results import mylayout
+        def mylayout(node):
+            nf = faces.ImgFace(outd+node.name+".png")
+            nf.margin_bottom = 20
+            nf.margin_right = 20
+            nf.margin_left = 20
+            faces.add_face_to_node(nf,node,0,position = "branch-top")
+            if node.is_leaf():
+                ff = AttrFace("name",fsize=30)
+                ff.margin_left = 20
+                faces.add_face_to_node(ff, node, column=1)
         t = Tree(ts,format=1)
         # Basic tree style
         ts = TreeStyle()
@@ -173,7 +183,7 @@ def main():
         ts.branch_vertical_margin = 1
         ts.layout_fn = mylayout
         # Add two text faces to different columns
-        t.show(tree_style=ts)
+        #t.show(tree_style=ts)
         t.render(outd+"contree.svg", w=600, units="mm", tree_style=ts)
         t.render(outd+"contree.pdf", w=6000, units="mm", tree_style=ts)
 

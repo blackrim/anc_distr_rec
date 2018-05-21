@@ -1,7 +1,6 @@
 import sys
 import os
 from ete3 import Tree, TreeStyle, TextFace,faces, AttrFace
-import conf
 
 def mylayout(node):
     nf = faces.ImgFace(conf.outdir+node.name+".png")
