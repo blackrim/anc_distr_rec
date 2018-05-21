@@ -53,8 +53,7 @@ we assume that the phylip files are extended and not
 strict (in terms of what type and how much white space
 and how many characters for taxon names)
 """
-def read_phylip_cont_file(infilename):
-    infile = open(infilename,"r")
+def read_phylip_cont_file(infile):
     seqlist = []
     # first line is the number of taxa and num of sites
     # we don't really even need to read this line, 
@@ -69,12 +68,10 @@ def read_phylip_cont_file(infilename):
             tseq = Sequence(name=name)
             tseq.set_cont_values(seq)
             seqlist.append(tseq)
-    infile.close()
     return seqlist
 
 
-def read_table_cont_file(infilename):
-    infile = open(infilename,"r")
+def read_table_cont_file(infile):
     seqlist = []
     for i in infile:
         if len(i) > 2:
@@ -85,7 +82,6 @@ def read_table_cont_file(infilename):
             tseq = Sequence(name=name)
             tseq.set_cont_values(seq)
             seqlist.append(tseq)
-    infile.close()
     return seqlist
 
 
