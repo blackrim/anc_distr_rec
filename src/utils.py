@@ -4,16 +4,25 @@ import numpy as np
 matches to cont values
 """
 def match_tips_and_cont_values(tree,seqs):
-    lvs = tree.leaves()
-    for i in lvs:
-        test = False
-        for j in seqs:
-            if j.name == i.label:
-                i.data['cont_values'] = j.cont_values
-                i.data['orig_values'] = j.orig_values
-                test = True
-                break
-        if test == False:
+    ln = {}
+    sq = {}
+    for i in tree.leaves():
+        ln[i.label] = i
+    for i in seqs:
+        sq[i.name] = i
+    for i in ln:
+        try:
+            ln[i].data['cont_values'] = sq[i].cont_values
+            ln[i].data['orig_values'] = sq[i].orig_values
+        #test = False
+        #for j in seqs:
+        #    if j.name == i.label:
+        #        i.data['cont_values'] = j.cont_values
+        #        i.data['orig_values'] = j.orig_values
+        #        test = True
+        #        break
+        #if test == False:
+        except:
             print("can't find "+i.label+" in cont_values")
             return False
 

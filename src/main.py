@@ -16,8 +16,6 @@ from utils import *
 from anc_state_calculator import *
 import aln_reader
 
-
-
 def generate_argparser():
     parser = argparse.ArgumentParser(
         prog="anc_distr_rec",
@@ -31,7 +29,7 @@ def generate_argparser():
         help=("Are the data already in predetermined categories (otherwise, it is expected that the data are independent points)"))
     parser.add_argument("-o","--outdir",type=os.path.abspath,nargs=1,
         required=True,help=("Output directory."))
-    parser.add_argument("-c","--ncats",type=int,default=50,
+    parser.add_argument("-c","--ncats",type=int,default=30,
         help=("The number of categories (how much to split it up)."))
     parser.add_argument("--sumtoone",action="store_true",default=True,
         help=("Should we make the distributions sum to one?"))
@@ -43,8 +41,24 @@ def generate_argparser():
         help=("Print the rates in the outdir (requires matplotlib)?"))
     return parser
 
+def get_data_limits(seqs):
+    low,high = None,None
+    for i in seqs:
+        mi = min(i.cont_values)
+        mx = max(i.cont_values)
+        if low == None:
+            low = mi
+            high = mx
+        else:
+            if mi < low:
+                low = mi
+            if mx > high:
+                high = mx
+    ad = (high-low)/4.
+    return low-ad,high+ad
+
 def simulate_data(seq):
-    n_basesample = 2000
+    n_basesample = 10000
     x = random.random()
     if x < .2:
         seq.cont_values = bimodal(0,2,1,4,6,5,n_basesample)
@@ -131,48 +145,58 @@ def print_tree_to_file(tree,outd):
     # Add two text faces to different columns
     #t.show(tree_style=ts)
     t.render(outd+"contree.svg", w=600, units="mm", tree_style=ts)
-    t.render(outd+"contree.pdf", w=6000, units="mm", tree_style=ts)
+    t.render(outd+"contree.pdf",w=6000, units="mm", tree_style=ts)
 
 def main():
     arguments = sys.argv[1:]
     parser = generate_argparser()
     args = parser.parse_args(arguments)
-    #this is the range of the data
-    # move this somewhere else soon
-    low = 0
-    high = 6
-    cats = []
-    for i in range(args.ncats+1):
-        cats.append(low + (i*(float(high-low)/args.ncats)))
-    #
+    
     start = datetime.now()
     treeline = args.treefile[0].readline()
     tree = tree_reader.read_tree_string(treeline)
     outd = args.outdir[0]
     if outd[-1] != "/":
         outd += "/"
-    print (outd)
+    print ("out dir:",outd,file=sys.stderr)
     if os.path.isdir(outd) == False:
         os.makedirs(outd)
     
     # read data file if present
+    low = None
+    high = None
     seqs = None
+    cats = []
     if args.datafile:
         seqs = aln_reader.read_table_cont_file(args.datafile[0])
         if args.precut: 
             ncuts = len(seqs[0].cont_values)
-            cuts = list(range(0,args.ncats))
-            low = 0
+            args.ncats = ncuts
+            cats = list(range(0,args.ncats))
+            low = 0.
             high = args.ncats
-    else: #simulate if there is no data
+        else:
+            low,high = get_data_limits(seqs)
+    else: #simulate if there is no data.
         seqs = []
         for i in tree.lvsnms():
             s = sequence.Sequence(i,"")
             simulate_data(s)
             seqs.append(s)
+        low,high = get_data_limits(seqs)
+
+    # this calculates the categories if not precut 
+    if args.precut == False:
+        for i in range(args.ncats+1):
+            cats.append(low + (i*(float(high-low)/args.ncats)))
+    print ("low range:",low,file=sys.stderr)
+    print ("high range:",high,file=sys.stderr)
+    print ("cats:",cats,file=sys.stderr)
 
     # Calculate the kernel densities
+    print("calculating densisties",file=sys.stderr)
     x_grid = calculate_densities(seqs,low,high,args)
+    print("finished calculating densities",file=sys.stderr)
     match_tips_and_cont_values(tree,seqs)
     
     # prepare the tree
@@ -183,10 +207,13 @@ def main():
 
     ## Conduct the analyses
     rates = []
+    print("calculating anc states",file=sys.stderr)
     for i in range(args.ncats):
+        print(" cat:"+str(i),file=sys.stderr)
         calc_schluter_anc_states(tree,i)
         estrate = sigsqML(tree)
         rates.append(estrate)
+    print("\nfinished calculation",file=sys.stderr)
 
     #plot the estimated rates
     if args.printrates:
@@ -194,10 +221,9 @@ def main():
 
     ## standard error and scale to one
     scale_and_se(tree,args)
-    
 
     end = datetime.now()
-    print("Total runtime (H:M:S): "+str(end-start))
+    print("runtime for analysis (H:M:S): "+str(end-start),file=sys.stderr)
 
     if args.printplots:
         print_plots_to_file(tree,x_grid,args,outd)
