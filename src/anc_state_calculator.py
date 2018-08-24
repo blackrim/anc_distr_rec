@@ -71,6 +71,7 @@ def calc_schluter_anc_states(tree,char):
                     fullMcp[nnj][nni] -= tbl;
                     fullMcp[nnj][nnj] += tbl;
             count += 1
+    # NOTE: these two cholesky steps are the slowest bits
     b = cho_factor(fullMcp)
     #these are the ML estimates for the ancestral states
     mle = cho_solve(b,fullVcp)

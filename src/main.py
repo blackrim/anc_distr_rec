@@ -211,8 +211,8 @@ def main():
     for i in range(args.ncats):
         print(" cat:"+str(i),file=sys.stderr)
         calc_schluter_anc_states(tree,i)
-        estrate = sigsqML(tree)
-        rates.append(estrate)
+        #estrate = sigsqML(tree)
+        #rates.append(estrate)
     print("\nfinished calculation",file=sys.stderr)
 
     #plot the estimated rates
