@@ -112,7 +112,7 @@ def print_plots_to_file(tree,x_grid,args,outd):
             ndcount += 1
         else:
             if args.precut == False:
-                plt.hist(i.data['orig_values'],normed=1, histtype='stepfilled',alpha=0.25)
+                plt.hist(i.data['orig_values'],density=1, histtype='stepfilled',alpha=0.25)
         plt.fill_between(x_grid,0,i.data['cont_values'],alpha=0.05)
         if i.istip == False:
             plt.plot(x_grid,i.data['cont_values_high'],'--',alpha=0.55,)
