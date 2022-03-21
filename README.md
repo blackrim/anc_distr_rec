@@ -16,3 +16,4 @@ You can run the example with `python3 src/main.py examples/test.cont.tre`. Right
  - Stephen A. Smith
  - Brian O'Meara
 
+(Some of this has been incorporated into the biotaphy project)
