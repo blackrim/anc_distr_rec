@@ -119,10 +119,15 @@ def print_plots_to_file(tree,x_grid,args,outd):
             plt.plot(x_grid,i.data['cont_values_low'],'--',alpha=0.55,)
         plt.grid(True)
         plt.savefig(outd+str(i.label)+'.png')
+        fl = open(outd+str(i.label)+'.csv',"w")
+        for j,k in zip(x_grid,i.data['cont_values']):
+            fl.write(str(j)+","+str(k)+"\n")
+        fl.close()
         plt.close()
 
 def print_tree_to_file(tree,outd):
-    from ete3 import Tree, TreeStyle, TextFace,faces,AttrFace
+    from ete4 import Tree
+    from ete4.treeview import TreeStyle, TextFace,faces,AttrFace
     #from plot_results import mylayout
     def mylayout(node):
         nf = faces.ImgFace(outd+node.name+".png")
@@ -130,22 +135,22 @@ def print_tree_to_file(tree,outd):
         nf.margin_right = 20
         nf.margin_left = 20
         faces.add_face_to_node(nf,node,0,position = "branch-top")
-        if node.is_leaf():
-            ff = AttrFace("name",fsize=30)
+        if node.is_leaf:
+            ff = AttrFace("name",fsize=75)
             ff.margin_left = 20
             faces.add_face_to_node(ff, node, column=1)
-    t = Tree(tree.get_newick_repr(True)+";",format=1)
+    t = Tree(tree.get_newick_repr(True)+";",parser=1)
     # Basic tree style
     ts = TreeStyle()
     ts.show_branch_length=False
     ts.show_leaf_name = False
-    ts.scale =  900
+    ts.scale =  75
     ts.branch_vertical_margin = 1
     ts.layout_fn = mylayout
     # Add two text faces to different columns
     #t.show(tree_style=ts)
-    t.render(outd+"contree.svg", w=600, units="mm", tree_style=ts)
-    t.render(outd+"contree.pdf",w=6000, units="mm", tree_style=ts)
+    t.render(outd+"contree.svg", w=200, units="mm", tree_style=ts)
+    t.render(outd+"contree.pdf",w=200, units="mm", tree_style=ts)
 
 def main():
     arguments = sys.argv[1:]
@@ -192,7 +197,6 @@ def main():
     print ("low range:",low,file=sys.stderr)
     print ("high range:",high,file=sys.stderr)
     print ("cats:",cats,file=sys.stderr)
-
     # Calculate the kernel densities
     print("calculating densisties",file=sys.stderr)
     x_grid = calculate_densities(seqs,low,high,args)
@@ -206,13 +210,14 @@ def main():
             i.data['cont_values_se'] = []
 
     ## Conduct the analyses
+    # TODO: change this to the threepoint calculation
     rates = []
     print("calculating anc states",file=sys.stderr)
     for i in range(args.ncats):
         print(" cat:"+str(i),file=sys.stderr)
         calc_schluter_anc_states(tree,i)
-        #estrate = sigsqML(tree)
-        #rates.append(estrate)
+        estrate = sigsqML(tree)
+        rates.append(estrate)
     print("\nfinished calculation",file=sys.stderr)
 
     #plot the estimated rates
